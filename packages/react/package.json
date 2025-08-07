@@ -1,0 +1,38 @@
+{
+  "name": "@fnv/react",
+  "version": "0.0.0",
+  "description": "React integration (hook-based)",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "unbuild",
+    "stub": "unbuild --stub",
+    "test": "vitest",
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "dependencies": {
+    "@fnv/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^5.1.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-format": "^1.0.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.9.2",
+    "unbuild": "^3.6.0",
+    "vitest": "^3.2.4"
+  }
+}

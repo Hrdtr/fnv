@@ -1,0 +1,34 @@
+{
+  "name": "@fnv/core",
+  "version": "0.0.0",
+  "description": "Core validation runtime for plain HTML + JS/TS",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "unbuild",
+    "stub": "unbuild --stub",
+    "test": "vitest --typecheck",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@standard-schema/spec": "^1.0.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^5.1.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-format": "^1.0.1",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.2",
+    "unbuild": "^3.6.0",
+    "vitest": "^3.2.4",
+    "zod": "^4.0.14"
+  }
+}
