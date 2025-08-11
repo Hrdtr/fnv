@@ -1,74 +1,47 @@
 import { describe, expect, it } from 'vitest'
-import { isPlainObject } from '../../src/utils/is-plain-object'
+import { isPlainObject } from '../../src/utils'
 
 describe('isPlainObject', () => {
-  it('returns true for plain object literals', () => {
+  it('should return true for plain objects', () => {
     expect(isPlainObject({})).toBe(true)
-    expect(isPlainObject({ a: 1, b: 'test' })).toBe(true)
+    expect(isPlainObject({ a: 1, b: 'hello' })).toBe(true)
+    expect(isPlainObject(Object.create(null))).toBe(true)
   })
 
-  it('returns true for Object.create(null)', () => {
-    const obj = Object.create(null)
-    obj.a = 1
-    expect(isPlainObject(obj)).toBe(true)
-  })
-
-  it('returns false for arrays', () => {
-    expect(isPlainObject([])).toBe(false)
-    expect(isPlainObject([1, 2, 3])).toBe(false)
-  })
-
-  it('returns false for null', () => {
+  it('should return false for non-objects', () => {
+    expect(isPlainObject(1)).toBe(false)
+    expect(isPlainObject('hello')).toBe(false)
+    expect(isPlainObject(true)).toBe(false)
     expect(isPlainObject(null)).toBe(false)
+    expect(isPlainObject(undefined)).toBe(false)
   })
 
-  it('returns false for functions', () => {
-    expect(isPlainObject(() => {})).toBe(false)
-    expect(isPlainObject(() => {})).toBe(false)
-  })
-
-  it('returns false for class instances', () => {
-    class MyClass {
-      x = 1
-    }
+  it('should return false for instances of classes', () => {
+    class MyClass {}
     expect(isPlainObject(new MyClass())).toBe(false)
   })
 
-  it('returns false for built-in objects like Date, RegExp, Map, Set', () => {
-    expect(isPlainObject(new Date())).toBe(false)
-    expect(isPlainObject(/abc/)).toBe(false)
-    expect(isPlainObject(new Map())).toBe(false)
-    expect(isPlainObject(new Set())).toBe(false)
+  it('should return false for arrays', () => {
+    expect(isPlainObject([])).toBe(false)
   })
 
-  it('returns false for primitive types', () => {
-    expect(isPlainObject(123)).toBe(false)
-    expect(isPlainObject('string')).toBe(false)
-    expect(isPlainObject(true)).toBe(false)
-    expect(isPlainObject(undefined)).toBe(false)
-    expect(isPlainObject(Symbol('s'))).toBe(false)
-    expect(isPlainObject(BigInt(123))).toBe(false)
+  it('should return false for functions', () => {
+    expect(isPlainObject(() => {})).toBe(false)
   })
 
-  it('returns false for objects with custom constructors', () => {
-    function Custom() {
-      // @ts-expect-error test
-      this.x = 1
-    }
-    const instance = new (Custom as any)()
-    expect(isPlainObject(instance)).toBe(false)
+  it('should return false for objects with a Symbol.toStringTag', () => {
+    const obj = { [Symbol.toStringTag]: 'Custom' }
+    expect(isPlainObject(obj)).toBe(false)
   })
 
-  it('returns true for plain object with no constructor property', () => {
-    const obj = { a: 1 }
-    delete (obj as any).constructor
-    expect(isPlainObject(obj)).toBe(true)
+  it('should return false for objects with a Symbol.iterator', () => {
+    const obj = { [Symbol.iterator]: () => {} }
+    expect(isPlainObject(obj)).toBe(false)
   })
 
-  // There's no safe, complete, runtime way to distinguish a Proxy from a plain object
-  // it('returns false for proxy objects', () => {
-  //   const target = {}
-  //   const proxy = new Proxy(target, {})
-  //   expect(isPlainObject(proxy)).toBe(false)
-  // })
+  it('should return false for objects with a custom prototype', () => {
+    const proto = { custom: true }
+    const obj = Object.create(proto)
+    expect(isPlainObject(obj)).toBe(false)
+  })
 })

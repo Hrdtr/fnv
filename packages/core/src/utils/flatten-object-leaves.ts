@@ -1,5 +1,7 @@
-import type { IsOptionalObjectKey, PrimitiveLike, Simplify, UnionToIntersection } from '../types'
+/* eslint-disable ts/no-empty-object-type */
+import type { IsOptionalProperty, PrimitiveLike, Simplify, UnionToIntersection } from '../types'
 import { isPlainObject } from './is-plain-object'
+import { isPrimitiveLike } from './is-primitive-like'
 
 // Add depth limit to prevent infinite recursion
 type MaxDepth = 10
@@ -10,7 +12,7 @@ type MaxDepth = 10
  * @template P - prefix string for nested keys
  * @template D - current depth counter
  */
-type FlattenHelper<
+type FlattenObjectLeavesHelper<
   T,
   P extends string = '',
   D extends readonly unknown[] = [],
@@ -18,33 +20,32 @@ type FlattenHelper<
   ? never // Stop recursion at max depth
   : T extends PrimitiveLike
     ? P extends ''
-      // eslint-disable-next-line ts/no-empty-object-type
       ? {}
       : { [key in P]: T }
     : T extends readonly (infer U)[] // Handle both arrays and readonly arrays
-      ? FlattenHelper<U, `${P}[${number}]`, [...D, unknown]>
+      ? FlattenObjectLeavesHelper<U, `${P}[${number}]`, [...D, unknown]>
       : T extends object
-        ? FlattenObjectHelper<T, P, D>
+        ? FlattenObjectLeavesObjectHelper<T, P, D>
         : never
 
 /**
  * Separate helper for object flattening to reduce complexity
  */
-type FlattenObjectHelper<
+type FlattenObjectLeavesObjectHelper<
   T extends object,
   P extends string,
   D extends readonly unknown[],
 > = {
   [K in keyof T]-?: K extends string | number
     ? T[K] extends readonly (infer U)[]
-      ? FlattenHelper<U, P extends '' ? `${K}[${number}]` : `${P}.${K}[${number}]`, [...D, unknown]>
+      ? FlattenObjectLeavesHelper<U, P extends '' ? `${K}[${number}]` : `${P}.${K}[${number}]`, [...D, unknown]>
       : T[K] extends PrimitiveLike
         ? {
-            [key in P extends '' ? K : `${P}.${K}`]: IsOptionalObjectKey<T, K> extends true
+            [key in P extends '' ? K : `${P}.${K}`]: IsOptionalProperty<T, K> extends true
               ? T[K] | undefined
               : T[K]
           }
-        : FlattenHelper<T[K], P extends '' ? `${K}` : `${P}.${K}`, [...D, unknown]>
+        : FlattenObjectLeavesHelper<T[K], P extends '' ? `${K}` : `${P}.${K}`, [...D, unknown]>
     : never
 }[keyof T]
 
@@ -63,51 +64,29 @@ type FilterLeafKeys<T> = {
 }
 
 /**
- * Utility type that recursively flattens a nested object type into dot-notation keys
- *
- * Choose between implementations based on your needs:
- * - Use Flatten for the optimized version of your original approach
- * - Use FlattenV2 for a potentially more performant alternative
+ * Utility type that recursively flattens a nested object leaves type into dot-notation keys
  */
-export type Flatten<T> = Simplify<FilterLeafKeys<UnionToIntersection<FlattenHelper<T>>>>
+export type FlattenObjectLeaves<T> = Simplify<FilterLeafKeys<UnionToIntersection<FlattenObjectLeavesHelper<T>>>>
 
 /**
- * Check if a value is a primitive type
- */
-function isPrimitiveLike(value: unknown): value is PrimitiveLike {
-  return (
-    value === null
-    || value === undefined
-    || typeof value === 'string'
-    || typeof value === 'number'
-    || typeof value === 'boolean'
-    || typeof value === 'bigint'
-    || typeof value === 'symbol'
-    || typeof value === 'function'
-    || value instanceof Date
-  )
-}
-
-/**
- * Flatten a nested object with arrays, creating entries for each array element
+ * Flatten a nested object & arrays leaves, creating entries for each child and array element
  * @param obj - The object to flatten
- * @returns A flattened object with dot-notation keys and actual array indices
+ * @returns A flattened object leaves with dot-notation keys and actual array indices
  */
-export function flatten<T extends Record<string | number, any>>(obj: T): Flatten<T> {
+export function flattenObjectLeaves<T extends Record<string | number, any>>(obj: T): FlattenObjectLeaves<T> {
   if (!isPlainObject(obj)) {
-    throw new TypeError('flatten() only accepts plain objects')
+    throw new TypeError('flattenObjectLeaves() only accepts plain objects')
   }
 
   const seen = new Set()
-  function flattenHelper(obj: unknown, prefix: string = '', result: Record<string | number, any> = {}): Record<string | number, any> {
+  function flattenObjectLeavesHelper(obj: unknown, prefix: string = '', result: Record<string | number, any> = {}): Record<string | number, any> {
     // Handle circular references
     if (typeof obj === 'object' && obj !== null) {
       if (seen.has(obj)) {
-        throw new TypeError(`flatten(): circular structure detected at "${prefix}"`)
+        throw new TypeError(`flattenObjectLeaves(): circular structure detected at "${prefix}"`)
       }
       seen.add(obj)
     }
-
     // Handle primitives
     if (isPrimitiveLike(obj)) {
       if (prefix !== '') {
@@ -115,16 +94,14 @@ export function flatten<T extends Record<string | number, any>>(obj: T): Flatten
       }
       return result
     }
-
     // Handle arrays - flatten each element with its actual index
     if (Array.isArray(obj)) {
       obj.forEach((item, index) => {
         const arrayPrefix = `${prefix}[${index}]`
-        flattenHelper(item, arrayPrefix, result)
+        flattenObjectLeavesHelper(item, arrayPrefix, result)
       })
       return result
     }
-
     // Handle objects
     if (isPlainObject(obj)) {
       const objRecord = obj
@@ -132,16 +109,15 @@ export function flatten<T extends Record<string | number, any>>(obj: T): Flatten
         if (Object.prototype.hasOwnProperty.call(objRecord, key)) {
           const value = objRecord[key]
           const newPrefix = prefix === '' ? key : `${prefix}.${key}`
-          flattenHelper(value, newPrefix, result)
+          flattenObjectLeavesHelper(value, newPrefix, result)
         }
       }
     }
-
     // Clear the seen set
     seen.clear()
 
     return result
   }
 
-  return flattenHelper(obj) as Flatten<T>
+  return flattenObjectLeavesHelper(obj) as FlattenObjectLeaves<T>
 }
